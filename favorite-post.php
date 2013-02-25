@@ -1,13 +1,13 @@
 <?php
 /*
-Plugin Name: WeDevs Favorite Posts
+Plugin Name: Favorite Posts
 Plugin URI: http://wedevs.com/
 Description: Favorite your posts
 Version: 0.1
 Author: Tareq Hasan
 Author URI: http://tareq.wedevs.com/
 License: GPL2 or later
-*/
+ */
 
 /**
  * Copyright (c) 2013 Tareq Hasan (email: tareq@wedevs.com). All rights reserved.
@@ -34,9 +34,9 @@ License: GPL2 or later
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  * **********************************************************************
  */
-
 // don't call the file directly
-if ( !defined( 'ABSPATH' ) ) exit;
+if ( !defined( 'ABSPATH' ) )
+    exit;
 
 require_once dirname( __FILE__ ) . '/favorite-post-widget.php';
 
@@ -75,18 +75,18 @@ class WeDevs_Favorite_Posts {
         $this->db = $wpdb;
         $this->table = $this->db->prefix . 'favorite_post';
 
-        register_activation_hook( __FILE__, array( $this, 'activate' ) );
-        register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
+        register_activation_hook( __FILE__, array($this, 'activate') );
+        register_deactivation_hook( __FILE__, array($this, 'deactivate') );
 
         // Localize our plugin
-        add_action( 'init', array( $this, 'localization_setup' ) );
+        add_action( 'init', array($this, 'localization_setup') );
 
         // Loads frontend scripts and styles
-        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+        add_action( 'wp_enqueue_scripts', array($this, 'enqueue_scripts') );
 
         // adds shortcode support favorite post button
-        add_shortcode( 'favorite-post-btn', array( $this, 'button_shortcode' ) );
-        add_shortcode( 'favorite-post', array( $this, 'display_shortcode' ) );
+        add_shortcode( 'favorite-post-btn', array($this, 'button_shortcode') );
+        add_shortcode( 'favorite-post', array($this, 'display_shortcode') );
 
         // Ajax vote
         add_action( 'wp_ajax_wfp_action', array($this, 'favorite_post') );
@@ -101,7 +101,7 @@ class WeDevs_Favorite_Posts {
     public static function init() {
         static $instance = false;
 
-        if ( ! $instance ) {
+        if ( !$instance ) {
             $instance = new WeDevs_Favorite_Posts();
         }
 
@@ -164,7 +164,7 @@ class WeDevs_Favorite_Posts {
         /**
          * All scripts goes here
          */
-        wp_enqueue_script( 'wfp-scripts', plugins_url( 'js/script.js', __FILE__ ), array( 'jquery' ), false, true );
+        wp_enqueue_script( 'wfp-scripts', plugins_url( 'js/script.js', __FILE__ ), array('jquery'), false, true );
 
 
         /**
@@ -177,7 +177,6 @@ class WeDevs_Favorite_Posts {
             'nonce' => wp_create_nonce( 'wfp_nonce' ),
             'errorMessage' => __( 'Something went wrong', 'wfp' )
         ) );
-
     }
 
     /**
@@ -197,12 +196,11 @@ class WeDevs_Favorite_Posts {
         $post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
         $user_id = get_current_user_id();
 
-        if ( !$this->get_post_status( $post_id, $user_id)) {
+        if ( !$this->get_post_status( $post_id, $user_id ) ) {
 
             $this->insert_favorite( $post_id, $user_id );
 
             wp_send_json_success( '<span class="wpf-favorite">&nbsp;</span> ' . __( 'Remove from favorite', 'wfp' ) );
-
         } else {
 
             $this->delete_favorite( $post_id, $user_id );
@@ -221,7 +219,7 @@ class WeDevs_Favorite_Posts {
     function get_post_status( $post_id, $user_id ) {
         $sql = "SELECT post_id FROM {$this->table} WHERE post_id = %d AND user_id = %d";
 
-        return $this->db->get_row( $this->db->prepare( $sql, $post_id, $user_id ));
+        return $this->db->get_row( $this->db->prepare( $sql, $post_id, $user_id ) );
     }
 
     /**
@@ -289,6 +287,12 @@ class WeDevs_Favorite_Posts {
         return $result;
     }
 
+    /**
+     * Favorite post link button
+     *
+     * @param int $post_id
+     * @return void
+     */
     function link_button( $post_id ) {
 
         if ( !is_user_logged_in() ) {
@@ -309,7 +313,15 @@ class WeDevs_Favorite_Posts {
         <?php
     }
 
-    function display_favorites( $post_type = 'all', $user_id = false, $limit = 10, $show_remove = true) {
+    /**
+     * Display favorite posts
+     *
+     * @param string $post_type
+     * @param int $user_id
+     * @param int $limit
+     * @param bool $show_remove
+     */
+    function display_favorites( $post_type = 'all', $user_id = false, $limit = 10, $show_remove = true ) {
 
         $posts = $this->get_favorites( $post_type, $user_id, $limit );
 
@@ -317,23 +329,30 @@ class WeDevs_Favorite_Posts {
         if ( $posts ) {
 
             $remove_title = __( 'Remove from favorite', 'wfp' );
+            $remove_link = ' <a href="#" data-id="%s" title="%s" class="wpf-remove-favorite">x</a>';
 
             foreach ($posts as $item) {
-                $extra = $show_remove ? sprintf( ' <a href="#" data-id="%s" title="%s" class="wpf-remove-favorite">x</a>', $item->post_id, $remove_title ) : '';
+                $extra = $show_remove ? sprintf( $remove_link, $item->post_id, $remove_title ) : '';
                 printf( '<li><a href="%s">%s</a>%s</li>', get_permalink( $item->post_id ), get_the_title( $item->post_id ), $extra );
             }
-
         } else {
             printf( '<li>%s</li>', __( 'Nothing found', 'wfp' ) );
         }
         echo '</ul>';
     }
 
+    /**
+     * Shortcode for favorite link button
+     *
+     * @global object $post
+     * @param array $atts
+     * @return string
+     */
     function button_shortcode( $atts ) {
         global $post;
 
         ob_start();
-        $atts = extract( shortcode_atts( array( 'post_id' => 0 ), $atts ) );
+        $atts = extract( shortcode_atts( array('post_id' => 0), $atts ) );
 
         if ( !$post_id ) {
             $post_id = $post->ID;
@@ -344,35 +363,40 @@ class WeDevs_Favorite_Posts {
         return ob_get_clean();
     }
 
+    /**
+     * Shortcode for displaying posts
+     *
+     * @global object $post
+     * @param array $atts
+     * @return string
+     */
     function display_shortcode( $atts ) {
         global $post;
 
         ob_start();
-        $atts = extract( shortcode_atts( array( 'user_id' => 0, 'count' => 10, 'post_type' => 'all' ), $atts ) );
+        $atts = extract( shortcode_atts( array('user_id' => 0, 'count' => 10, 'post_type' => 'all', 'remove_link' => false), $atts ) );
 
         if ( !$user_id ) {
             $user_id = get_current_user_id();
         }
 
-        $posts = $this->get_favorites( $post_type, $user_id, $count );
-
-        $html = '<ul>';
-        if ( $posts ) {
-            foreach ($posts as $item) {
-                $html .= sprintf( '<li><a href="%s">%s</a></li>', get_permalink( $item->post_id ), get_the_title( $item->post_id ) );
-            }
-        } else {
-            $html .= sprintf( '<li>%s</li>', __( 'Nothing found', 'wfp' ) );
-        }
-        $html .= '</ul>';
+        $this->display_favorites( $post_type, $user_id, $count, $remove_link );
 
         return $html;
     }
 
-} // WeDevs_Favorite_Posts
+}
+
+// WeDevs_Favorite_Posts
 
 $favorite_post = WeDevs_Favorite_Posts::init();
 
+/**
+ * Wrapper function for favorite post button
+ *
+ * @global type $post
+ * @param type $post_id
+ */
 function wfp_button( $post_id = null ) {
     global $post;
 
