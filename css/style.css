@@ -1,0 +1,29 @@
+a.wpf-favorite-link span {
+    display: inline-block;
+    position: relative;
+    background-image: url('../images/stars16.png');
+    background-position: left top;
+    width: 16px;
+    height: 16px;
+}
+
+a.wpf-favorite-link span.wpf-favorite {
+    background-position: 0 32px;
+}
+
+.wfp-loading:after {
+    content: '';
+    background: url('../images/loading.gif') no-repeat;
+    height: 16px;
+    width: 16px;
+    padding: 0 16px;
+    margin-left: 5px;
+}
+
+a.wpf-remove-favorite {
+    color: #B30000;
+    background: #E0E0E0;
+    border-radius: 500px;
+    padding: 1px 4px;
+    font-size: 9px;
+}
