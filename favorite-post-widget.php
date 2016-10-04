@@ -14,7 +14,7 @@ class WeDevs_Favorite_Post_Widget extends WP_Widget {
      * */
     function WeDevs_Favorite_Post_Widget() {
         $widget_ops = array('classname' => 'wedevs-favorite-post' );
-        $this->WP_Widget( 'wedevs-favorite-post', __( 'Favorite post', 'wfp' ), $widget_ops );
+        parent::__construct( 'wedevs-favorite-post', __( 'Favorite post', 'wfp' ), $widget_ops );
     }
 
     /**
