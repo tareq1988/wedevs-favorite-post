@@ -40,6 +40,24 @@ if ( !defined( 'ABSPATH' ) )
 
 require_once dirname( __FILE__ ) . '/favorite-post-widget.php';
 
+if ( ! class_exists( 'API' ) ) {
+	require_once dirname( __FILE__ ) . '/API.php';
+}
+
+
+if ( ! class_exists( 'FavoritesController' ) ) {
+	require_once dirname( __FILE__ ) . '/FavoritesController.php';
+}
+add_action( 'rest_api_init', 'create_initial_rest_routes_fav');
+if ( ! function_exists( 'create_initial_rest_routes_fav' ) ) {
+	function create_initial_rest_routes_fav() {
+		$controller = new FavoritesController;
+		$controller->register_routes();
+
+	}
+}
+
+
 /**
  * WeDevs_Favorite_Posts class
  *
@@ -57,6 +75,8 @@ class WeDevs_Favorite_Posts {
      */
     private $db;
 
+    private $api;
+
     /**
      * Constructor for the WeDevs_Favorite_Posts class
      *
@@ -73,6 +93,7 @@ class WeDevs_Favorite_Posts {
 
         // setup table name
         $this->db = $wpdb;
+        $this->api = new API;	
         $this->table = $this->db->prefix . 'favorite_post';
 
         register_activation_hook( __FILE__, array($this, 'activate') );
@@ -114,7 +135,7 @@ class WeDevs_Favorite_Posts {
      * Nothing being called here yet.
      */
     public function activate() {
-        $sql = "CREATE TABLE {$this->table} (
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (
           `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `user_id` int(11) unsigned NOT NULL DEFAULT '0',
           `post_id` int(11) unsigned NOT NULL DEFAULT '0',
@@ -196,95 +217,17 @@ class WeDevs_Favorite_Posts {
         $post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
         $user_id = get_current_user_id();
 
-        if ( !$this->get_post_status( $post_id, $user_id ) ) {
+        if ( !$this->api->get_post_status( $post_id, $user_id ) ) {
 
-            $this->insert_favorite( $post_id, $user_id );
+            $this->api->insert_favorite( $post_id, $user_id );
 
             wp_send_json_success( '<span class="wpf-favorite">&nbsp;</span> ' . __( 'Remove from favorite', 'wfp' ) );
         } else {
 
-            $this->delete_favorite( $post_id, $user_id );
+            $this->api->delete_favorite( $post_id, $user_id );
 
             wp_send_json_success( '<span class="wpf-not-favorite">&nbsp;</span> ' . __( 'Add to favorite', 'wfp' ) );
         }
-    }
-
-    /**
-     * Gets a user vote for a post
-     *
-     * @param int $post_id
-     * @param int $user_id
-     * @return bool|object
-     */
-    function get_post_status( $post_id, $user_id ) {
-        $sql = "SELECT post_id FROM {$this->table} WHERE post_id = %d AND user_id = %d";
-
-        return $this->db->get_row( $this->db->prepare( $sql, $post_id, $user_id ) );
-    }
-
-    /**
-     * Insert a user vote
-     *
-     * @param int $post_id
-     * @param int $user_id
-     * @param int $vote
-     * @return bool
-     */
-    public function insert_favorite( $post_id, $user_id ) {
-        $post_type = get_post_field( 'post_type', $post_id );
-
-        return $this->db->insert(
-            $this->table,
-            array(
-                'post_id' => $post_id,
-                'post_type' => $post_type,
-                'user_id' => $user_id,
-            ),
-            array(
-                '%d',
-                '%s',
-                '%d'
-            )
-        );
-    }
-
-    /**
-     * Delete a user favorite
-     *
-     * @param int $post_id
-     * @param int $user_id
-     * @return bool
-     */
-    public function delete_favorite( $post_id, $user_id ) {
-        $query = "DELETE FROM {$this->table} WHERE post_id = %d AND user_id = %d";
-
-        return $this->db->query( $this->db->prepare( $query, $post_id, $user_id ) );
-    }
-
-    /**
-     * Get favorite posts
-     *
-     * @param int $post_type
-     * @param int $count
-     * @param int $offset
-     * @return array
-     */
-    function get_favorites( $post_type = 'all', $user_id = 0, $count = 10, $offset = 0 ) {
-        $where = 'WHERE user_id = ';
-        $where .= $user_id ? $user_id : get_current_user_id();
-        $where .= $post_type == 'all' ? '' : " AND post_type = '$post_type'";
-
-
-        $sql = "SELECT post_id, post_type
-                FROM {$this->table}
-                $where
-                GROUP BY post_id
-                ORDER BY post_type
-                LIMIT $offset, $count";
-
-        $result = $this->db->get_results( $sql );
-
-        return $result;
     }
 
     /**
@@ -299,7 +242,7 @@ class WeDevs_Favorite_Posts {
             return;
         }
 
-        $status = $this->get_post_status( $post_id, get_current_user_id() );
+        $status = $this->api->get_post_status( $post_id, get_current_user_id() );
         ?>
 
         <a class="wpf-favorite-link" href="#" data-id="<?php echo $post_id; ?>">
@@ -323,7 +266,7 @@ class WeDevs_Favorite_Posts {
      */
     function display_favorites( $post_type = 'all', $user_id = false, $limit = 10, $show_remove = true ) {
 
-        $posts = $this->get_favorites( $post_type, $user_id, $limit );
+        $posts = $this->api->get_favorites( $post_type, $user_id, $limit );
 
         echo '<ul>';
         if ( $posts ) {
