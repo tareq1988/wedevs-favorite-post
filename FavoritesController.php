@@ -19,8 +19,20 @@ class FavoritesController extends WP_REST_Controller {
 				'methods'         => WP_REST_Server::EDITABLE,
 				'callback'        => array( $this, 'update_item' ),
 				'permission_callback' => array( $this, 'update_item_permissions_check' ),
+				'args'            => array(
+					'favorite'    => array(
+						'required' => false,
+					),
+				),
+
 			),
 		) );
+		register_rest_field(
+			'post',
+			'favoraited',
+			array(
+				'get_callback'    => array( $this, 'add_favoraite_to_post_resource'),
+			) );
 	}
 
 	/**
@@ -47,25 +59,53 @@ class FavoritesController extends WP_REST_Controller {
 	public function update_item( $request ) {
 		$post_id = (int) $request['id'];
 		$post = get_post( (int) $post_id );
+		$favorite = $request['favorite'];
+		if( $favorite=='true' )
+			$favorited = 1;
+		else
+			$favorited = 0;
 
 		if ( empty( $post_id ) || empty( $post->ID ) ) {
 			return new WP_Error( 'rest_post_invalid_id', __( 'Post id is invalid.' ), array( 'status' => 400 ) );
 		}
 
 		$user_id = get_current_user_id();
-		$status = $this->api->get_post_status( $post_id, $user_id );
-		if ( !$status ) {
-			$this->api->insert_favorite( $post_id, $user_id );
+
+		if( empty( $favorite ) ){
+			$status = $this->api->get_post_status( $post_id, $user_id );
+			if ( !$status ) {
+				$this->api->insert_favorite( $post_id, $user_id );
+			} else {
+				 $this->api->delete_favorite( $post_id, $user_id );
+			}
 		} else {
-			 $this->api->delete_favorite( $post_id, $user_id );
+
+			if ( $favorited ) {
+				$this->api->insert_favorite( $post_id, $user_id );
+			} else {
+				 $this->api->delete_favorite( $post_id, $user_id );
+			}			
 		}
-		$data = array(
+		if( empty( $favorite ) ){
+			$data = array(
 
-			'id'                 => $post_id,
+				'id'                 => $post_id,
 
-			'favorite'           => !$status );
+				'favorite'           => !$status );
+		} else {
+			$status = $this->api->get_post_status( $post_id, $user_id );
+			$data = array(
+
+				'id'                 => $post_id,
+
+				'favorite'           => !empty( $status) );		
+		}
 
 		return rest_ensure_response( $data );
+	}
+
+	function add_favoraite_to_post_resource( $object, $field_name, $request ) {
+		return $this->api->get_favorites_count_for_post($object['id']);
 	}
 
 }

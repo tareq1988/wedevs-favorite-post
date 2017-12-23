@@ -142,10 +142,33 @@ class WeDevs_Favorite_Posts {
           `post_type` varchar(20) NOT NULL,
           PRIMARY KEY (`id`),
           KEY `user_id` (`user_id`),
-          KEY `post_id` (`post_id`)
+          KEY `post_id` (`post_id`),
+          CONSTRAINT post_user_constraint UNIQUE (`user_id`,`post_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
 
         $this->db->query( $sql );
+      $sql = "CREATE TABLE IF NOT EXISTS `wp_post_favorites` (
+     `post_id` bigint(20) NOT NULL,
+     `favorites` bigint(20) NOT NULL,
+     PRIMARY KEY (`post_id`)
+    )ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+	$this->db->query( $sql );
+      $sql = "DROP TRIGGER IF EXISTS add_post_favorites ;";
+	$this->db->query( $sql );
+      $sql = "DROP TRIGGER IF EXISTS delete_post_favorites;";
+	$this->db->query( $sql );
+      $sql = "CREATE TRIGGER add_post_favorites AFTER INSERT ON `wp_favorite_post`
+     FOR EACH ROW
+     BEGIN
+       INSERT INTO `wp_post_favorites` (`post_id`, `favorites`) VALUES(New.`post_id`,1) ON DUPLICATE KEY UPDATE `favorites`=`favorites`+1;
+    END;";
+	$this->db->query( $sql );
+      $sql = "CREATE TRIGGER delete_post_favorites AFTER DELETE ON `wp_favorite_post`
+     FOR EACH ROW
+     BEGIN
+       UPDATE `wp_post_favorites` set `favorites`=`favorites`- 1 WHERE `post_id` = OLD.`post_id`;
+    END;";
+	$this->db->query( $sql );
     }
 
     /**

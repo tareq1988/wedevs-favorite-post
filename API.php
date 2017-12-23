@@ -42,20 +42,9 @@ class API {
 	*/
 	public function insert_favorite( $post_id, $user_id ) {
 		$post_type = get_post_field( 'post_type', $post_id );
+		$query = "	INSERT IGNORE INTO  {$this->table} (post_id,post_type,user_id) VALUES (%d,%s,%d)";
 
-		return $this->db->insert(
-            $this->table,
-            array(
-                'post_id' => $post_id,
-                'post_type' => $post_type,
-                'user_id' => $user_id,
-            ),
-            array(
-                '%d',
-                '%s',
-                '%d'
-            )
-		);
+		return $this->db->query( $this->db->prepare( $query, $post_id, $post_type, $user_id ) );
 	}
 
 	/**
@@ -96,6 +85,14 @@ class API {
 
 		return $result;
 	}
-
+	
+	function get_favorites_count_for_post( $post_id ) {
+		$query = 'SELECT favorites FROM wp_post_favorites WHERE post_id='.$post_id ;
+		$result = $this->db->get_results( $query )[0];
+		if( ! $result )
+			return 0;
+		else
+			return $result->favorites;
+	}
 }
 
