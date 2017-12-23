@@ -29,7 +29,7 @@ class FavoritesController extends WP_REST_Controller {
 		) );
 		register_rest_field(
 			'post',
-			'favoraited',
+			'favorited',
 			array(
 				'get_callback'    => array( $this, 'add_favoraite_to_post_resource'),
 			) );
