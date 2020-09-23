@@ -12,7 +12,7 @@ class WeDevs_Favorite_Post_Widget extends WP_Widget {
      *
      * @return void
      * */
-    function WeDevs_Favorite_Post_Widget() {
+    function __construct() {
         $widget_ops = array('classname' => 'wedevs-favorite-post' );
         parent::__construct( 'wedevs-favorite-post', __( 'Favorite post', 'wfp' ), $widget_ops );
     }
@@ -34,7 +34,10 @@ class WeDevs_Favorite_Post_Widget extends WP_Widget {
             echo $before_title . $title . $after_title;
         }
 
-        $show_remove = $instance['remove_link'] == 'on' ? true : false;
+        if(isset($instance['remove_link']) && $instance['remove_link'] == 'on'){
+            $show_remove = true;
+        }
+        else $show_remove = false;
         WeDevs_Favorite_Posts::init()->display_favorites( $instance['post_type'], false, $instance['limit'], $show_remove );
 
         echo $after_widget;
@@ -106,5 +109,5 @@ class WeDevs_Favorite_Post_Widget extends WP_Widget {
 
 }
 
-add_action( 'widgets_init', create_function( '', "register_widget('WeDevs_Favorite_Post_Widget');" ) );
+add_action( 'widgets_init', function (){register_widget('WeDevs_Favorite_Post_Widget');} );
 
