@@ -106,5 +106,8 @@ class WeDevs_Favorite_Post_Widget extends WP_Widget {
 
 }
 
-add_action( 'widgets_init', create_function( '', "register_widget('WeDevs_Favorite_Post_Widget');" ) );
+add_action ( 'widgets_init', 'WeDevs_init_Favorite_Post_Widget' );
+function WeDevs_init_Favorite_Post_Widget() {
+    return register_widget('WeDevs_Favorite_Post_Widget');
+}
 
